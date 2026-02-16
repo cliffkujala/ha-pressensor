@@ -21,7 +21,7 @@ PARALLEL_UPDATES = 0
 ZERO_PRESSURE_BUTTON = ButtonEntityDescription(
     key="zero_pressure",
     translation_key="zero_pressure",
-    name="Zero/Tare pressure",
+    name="Zero calibration",
     icon="mdi:gauge-empty",
 )
 
@@ -49,7 +49,7 @@ async def async_setup_entry(
 
 
 class PressensorZeroPressureButton(PressensorEntity, ButtonEntity):
-    """Button to zero/tare the Pressensor pressure reading."""
+    """Button to calibrate the Pressensor pressure reading at zero."""
 
     async def async_press(self) -> None:
         """Handle the button press — send zero pressure command."""

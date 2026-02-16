@@ -10,7 +10,7 @@ A native Home Assistant integration for the [Pressensor](https://pressensor.com/
 - **Temperature** readings (sent every 16th pressure notification)
 - **Battery level** with state restore across disconnects
 - **Connection status** binary sensor
-- **Zero/Tare pressure** button — reset the pressure baseline from HA
+- **Zero calibration** button — calibrate the pressure reading to zero from HA
 
 ## Installation
 
@@ -41,7 +41,7 @@ A native Home Assistant integration for the [Pressensor](https://pressensor.com/
 | Temperature | Sensor | Group temperature (°C, updated every ~16th reading) |
 | Battery | Sensor | Battery percentage (0–100%) |
 | Connected | Binary Sensor | BLE connection status |
-| Zero/Tare pressure | Button | Reset the pressure baseline to zero |
+| Zero calibration | Button | Calibrate the pressure reading to zero |
 | Reconnect | Button | Manually trigger a BLE connection attempt |
 
 ## Removal

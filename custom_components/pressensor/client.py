@@ -126,7 +126,7 @@ class PressensorClient:
             self._notify_state()
 
     async def zero_pressure(self) -> None:
-        """Send a zero/tare command to treat the current pressure as zero."""
+        """Send a zero calibration command to set the current reading as zero."""
         if not self._client or not self._client.is_connected:
             _LOGGER.warning("Cannot zero pressure: not connected")
             return
