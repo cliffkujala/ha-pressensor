@@ -6,9 +6,9 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
+    async_ble_device_from_address,
     async_discovered_service_info,
 )
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
@@ -40,22 +40,30 @@ class PressensorConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
+        errors: dict[str, str] = {}
+
         if user_input is not None:
             address = user_input[CONF_ADDRESS]
             await self.async_set_unique_id(format_mac(address))
             self._abort_if_unique_id_configured()
 
-            name = self._discovered_devices.get(address, f"Pressensor ({address})")
-            return self.async_create_entry(
-                title=name,
-                data={CONF_ADDRESS: address},
-            )
+            # Verify device is reachable before creating entry
+            if (
+                async_ble_device_from_address(self.hass, address, connectable=True)
+                is None
+            ):
+                errors["base"] = "cannot_connect"
+            else:
+                name = self._discovered_devices.get(address, f"Pressensor ({address})")
+                return self.async_create_entry(
+                    title=name,
+                    data={CONF_ADDRESS: address},
+                )
 
         # Find Pressensor devices via bluetooth
         for device in async_discovered_service_info(self.hass):
             if (
-                device.name
-                and device.name.startswith("PRS")
+                device.name and device.name.startswith("PRS")
             ) or PRESSURE_SERVICE_UUID.lower() in [
                 str(u).lower() for u in device.service_uuids
             ]:
@@ -86,6 +94,7 @@ class PressensorConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                 }
             ),
+            errors=errors,
         )
 
     async def async_step_bluetooth(

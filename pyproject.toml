@@ -1,0 +1,12 @@
+[project]
+name = "ha-pressensor"
+version = "0.1.0"
+description = "Home Assistant integration for Pressensor Bluetooth pressure transducer"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["custom_components/pressensor"]

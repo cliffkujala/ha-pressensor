@@ -41,7 +41,17 @@ A native Home Assistant integration for the [Pressensor](https://pressensor.com/
 | Temperature | Sensor | Group temperature (°C, updated every ~16th reading) |
 | Battery | Sensor | Battery percentage (0–100%) |
 | Connected | Binary Sensor | BLE connection status |
-| Zero pressure | Button | Tare/zero the pressure reading |
+| Zero/Tare pressure | Button | Reset the pressure baseline to zero |
+| Reconnect | Button | Manually trigger a BLE connection attempt |
+
+## Removal
+
+1. Go to **Settings → Devices & Services**
+2. Find the **Pressensor** integration
+3. Click the three-dot menu and select **Delete**
+4. Restart Home Assistant
+
+If installed via HACS, you can also uninstall the integration from HACS after removing it from Devices & Services.
 
 ## BLE Protocol Reference
 

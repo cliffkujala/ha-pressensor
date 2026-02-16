@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+try:
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+except ImportError:
+    from homeassistant.helpers.entity_platform import (
+        AddEntitiesCallback as AddConfigEntryEntitiesCallback,
+    )
 
 from .coordinator import PressensorConfigEntry, PressensorCoordinator
 from .entity import PressensorEntity
@@ -15,12 +21,14 @@ PARALLEL_UPDATES = 0
 ZERO_PRESSURE_BUTTON = ButtonEntityDescription(
     key="zero_pressure",
     translation_key="zero_pressure",
+    name="Zero/Tare pressure",
     icon="mdi:gauge-empty",
 )
 
 RECONNECT_BUTTON = ButtonEntityDescription(
     key="reconnect",
     translation_key="reconnect",
+    name="Reconnect",
     icon="mdi:bluetooth-connect",
 )
 
