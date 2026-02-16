@@ -64,7 +64,7 @@ class TestCoordinatorProperties:
     def test_state_without_client(self, coordinator: PressensorCoordinator) -> None:
         """Test state returns empty PressensorState when no client."""
         state = coordinator.state
-        assert state.pressure_mbar is None
+        assert state.pressure_mbar == 0.0
         assert state.connected is False
 
     def test_state_with_client(self, coordinator: PressensorCoordinator) -> None:

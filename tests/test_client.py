@@ -71,7 +71,7 @@ class TestPressensorClientProperties:
     def test_initial_state(self, client: PressensorClient) -> None:
         """Test initial state is disconnected with no data."""
         state = client.state
-        assert state.pressure_mbar is None
+        assert state.pressure_mbar == 0.0
         assert state.temperature_c is None
         assert state.battery_percent is None
         assert state.connected is False
@@ -371,12 +371,12 @@ class TestPressensorClientNotifications:
         # +5 mbar from zero — within dead-band, filtered
         data = struct.pack(">h", 5)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar is None
+        assert client.state.pressure_mbar == 0.0
 
         # -5 mbar from zero — within dead-band, filtered
         data = struct.pack(">h", -5)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar is None
+        assert client.state.pressure_mbar == 0.0
 
         # +6 mbar from zero — exceeds dead-band, passes through
         data = struct.pack(">h", 6)
@@ -392,7 +392,7 @@ class TestPressensorClientNotifications:
 
         client._on_pressure_notification(characteristic, bytearray([0x01]))
 
-        assert client.state.pressure_mbar is None
+        assert client.state.pressure_mbar == 0.0
 
 
 class TestPressensorClientDisconnectCallback:

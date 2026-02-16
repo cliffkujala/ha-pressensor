@@ -26,7 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 class PressensorState:
     """Represents the current state of a Pressensor device."""
 
-    pressure_mbar: float | None = None
+    pressure_mbar: float = 0.0
     temperature_c: float | None = None
     battery_percent: int | None = None
     connected: bool = False
