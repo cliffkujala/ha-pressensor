@@ -27,8 +27,11 @@
       }
     },
     "button": {
+      "reconnect": {
+        "name": "Reconnect"
+      },
       "zero_pressure": {
-        "name": "Zero pressure"
+        "name": "Zero/Tare pressure"
       }
     },
     "sensor": {

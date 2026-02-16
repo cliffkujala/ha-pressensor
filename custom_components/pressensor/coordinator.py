@@ -150,6 +150,30 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
         await self._client.connect()
         self._last_battery_check = utcnow()
 
+    async def async_request_connect(self) -> None:
+        """Manually request a connection attempt (e.g. from a button press)."""
+        if self._connecting or (self._client and self._client.connected):
+            _LOGGER.debug(
+                "Pressensor %s already connected or connecting", self._address
+            )
+            return
+
+        ble_device = bluetooth.async_ble_device_from_address(
+            self.hass, self._address, connectable=True
+        )
+
+        if ble_device is None:
+            _LOGGER.debug(
+                "Pressensor %s not found — device may be asleep", self._address
+            )
+            return
+
+        self._connecting = True
+        try:
+            await self._async_ensure_connected(ble_device)
+        finally:
+            self._connecting = False
+
     async def _async_update_data(self) -> None:
         """Fallback poll — connect if advertisement callback hasn't already."""
         if self._connecting or (self._client and self._client.connected):
