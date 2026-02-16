@@ -4,7 +4,7 @@ A native Home Assistant integration for the [Pressensor](https://pressensor.com/
 
 ## Features
 
-- **Auto-discovery** via Bluetooth — just like the Acaia scale, HA will detect your Pressensor automatically
+- **Auto-discovery** via Bluetooth — HA will detect your Pressensor automatically
 - **Works through Bluetooth Proxies** — any ESPHome Bluetooth proxy (like the Everything Presence One) in range will relay the connection
 - **Real-time pressure** in millibar (convertible to bar via HA unit settings)
 - **Temperature** readings (sent every 16th pressure notification)
