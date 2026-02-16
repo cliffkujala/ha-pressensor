@@ -152,20 +152,30 @@ class PressensorClient:
         - Every 16th notification: additionally includes signed 2 bytes
           big-endian, temperature in tenths of a degree Celsius
         """
+        changed = False
+
         if len(data) >= 2:
             pressure_mbar = float(struct.unpack(">h", data[0:2])[0])
             # Dead-band filter: ignore changes of ≤5 mbar to suppress sensor noise
             if abs(pressure_mbar - self._last_reported_pressure) > 5:
                 self._state.pressure_mbar = pressure_mbar
                 self._last_reported_pressure = pressure_mbar
+                changed = True
 
         if len(data) >= 4:
             temp_tenths = struct.unpack(">h", data[2:4])[0]
-            self._state.temperature_c = temp_tenths / 10.0
+            new_temp = temp_tenths / 10.0
+            if new_temp != self._state.temperature_c:
+                self._state.temperature_c = new_temp
+                changed = True
 
         self._notification_count += 1
-        self._state.connected = True
-        self._notify_state()
+        if not self._state.connected:
+            self._state.connected = True
+            changed = True
+
+        if changed:
+            self._notify_state()
 
     def _on_disconnect(self, _client: BleakClient) -> None:
         """Handle device disconnection."""
