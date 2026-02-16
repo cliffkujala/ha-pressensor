@@ -48,6 +48,7 @@ class PressensorClient:
         self._state_callback = state_callback
         self._disconnect_callback = disconnect_callback
         self._notification_count = 0
+        self._last_reported_pressure: float = 0.0
 
     @property
     def state(self) -> PressensorState:
@@ -152,8 +153,11 @@ class PressensorClient:
           big-endian, temperature in tenths of a degree Celsius
         """
         if len(data) >= 2:
-            pressure_mbar = struct.unpack(">h", data[0:2])[0]
-            self._state.pressure_mbar = float(pressure_mbar)
+            pressure_mbar = float(struct.unpack(">h", data[0:2])[0])
+            # Dead-band filter: ignore changes of ≤1 mbar to suppress sensor noise
+            if abs(pressure_mbar - self._last_reported_pressure) > 1:
+                self._state.pressure_mbar = pressure_mbar
+                self._last_reported_pressure = pressure_mbar
 
         if len(data) >= 4:
             temp_tenths = struct.unpack(">h", data[2:4])[0]
