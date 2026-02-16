@@ -82,13 +82,17 @@ Detects a 200 mbar (0.2 bar) pressure rise — indicating the pump has engaged �
 automation:
   - alias: "Auto-tare and start timer on extraction"
     trigger:
-      - platform: state
-        entity_id: sensor.prs12345_pressure
+      - platform: template
+        value_template: >
+          {{ (states('sensor.prs12345_pressure') | float(0))
+             - (state_attr('sensor.prs12345_pressure', 'old_state') | float(
+                 trigger.from_state.state | default(0) | float(0)))
+             >= 200 }}
     condition:
       - condition: template
         value_template: >
-          {{ (trigger.to_state.state | float(0))
-             - (trigger.from_state.state | float(0)) >= 200 }}
+          {{ (as_timestamp(now()) -
+              as_timestamp(states.sensor.prs12345_pressure.last_changed)) < 1 }}
     action:
       - service: button.press
         target:
@@ -132,7 +136,7 @@ Replace `prs12345` with your device's actual entity ID prefix.
 - Ensure the Pressensor has a fresh CR2032 battery installed
 - Confirm your HA host has a working Bluetooth adapter, or that an ESPHome Bluetooth Proxy is within range
 - Bring the device closer to the Bluetooth adapter or proxy
-- Press the button on the Pressensor to wake it up, then check **Settings -> Devices & Services** for a new discovery
+- Cycle your espresso machine to apply pressure and wake the device, then check **Settings -> Devices & Services** for a new discovery
 
 ### Connection drops frequently
 
@@ -142,13 +146,13 @@ Replace `prs12345` with your device's actual entity ID prefix.
 
 ### Readings appear stale or unavailable
 
-- The device may be asleep. Apply pressure to the group head or press the Reconnect button in HA
+- The device may be asleep. Cycle your espresso machine to apply pressure and wake it, or press the Reconnect button in HA
 - Check the Connected binary sensor — if it shows Off, the device is not currently streaming data
 
 ### Battery reads 0% or unavailable
 
 - Replace the CR2032 battery
-- After replacing, wake the device and press the Reconnect button
+- After replacing, cycle your espresso machine to wake the device, then press the Reconnect button in HA
 
 ## Removal
 
