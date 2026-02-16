@@ -8,5 +8,9 @@ requires-python = ">=3.12"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
 [tool.coverage.run]
 source = ["custom_components/pressensor"]

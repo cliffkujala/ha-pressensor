@@ -1,5 +1,7 @@
 """Base entity for Pressensor."""
 
+from __future__ import annotations
+
 from homeassistant.helpers.device_registry import (
     CONNECTION_BLUETOOTH,
     DeviceInfo,
