@@ -27,6 +27,14 @@ A native Home Assistant integration for the [Pressensor](https://pressensor.com/
 2. Install the "Pressensor" integration
 3. Restart Home Assistant
 
+## Setup
+
+During setup you will be asked to select your Pressensor from a list of discovered Bluetooth devices. Make sure the device is powered on and within Bluetooth range of your Home Assistant host or an ESPHome Bluetooth Proxy before starting.
+
+No credentials, API keys, or additional configuration parameters are required.
+
+If your Pressensor is not discovered automatically, try pressing the button on the device to wake it up, then go to **Settings → Devices & Services → Add Integration** and search for "Pressensor".
+
 ## Requirements
 
 - Home Assistant with the **Bluetooth** integration enabled

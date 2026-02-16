@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 try:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -53,15 +54,24 @@ class PressensorZeroPressureButton(PressensorEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press — send zero pressure command."""
-        if self.coordinator.client:
+        if not self.coordinator.client or not self.coordinator.client.connected:
+            raise HomeAssistantError(
+                "Pressensor is not connected. Wait for the device to wake up or press Reconnect."
+            )
+        try:
             await self.coordinator.client.zero_pressure()
+        except Exception as err:
+            raise HomeAssistantError("Failed to send zero pressure command") from err
 
 
 class PressensorReconnectButton(PressensorEntity, ButtonEntity):
     """Button to manually trigger a BLE reconnection attempt."""
 
     async def async_press(self) -> None:
-        """Handle the button press — request a connection attempt."""
+        """Handle the button press — request a connection attempt.
+
+        Raises HomeAssistantError if the device is not found or connection fails.
+        """
         await self.coordinator.async_request_connect()
 
     @property

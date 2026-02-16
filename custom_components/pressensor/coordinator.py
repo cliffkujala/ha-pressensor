@@ -16,6 +16,7 @@ from homeassistant.components.bluetooth import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
@@ -55,6 +56,7 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
         self._cancel_bluetooth_callback: Callable[[], None] | None = None
         self._cancel_battery_check: Callable[[], None] | None = None
         self._last_battery_check: datetime | None = None
+        self._was_available: bool = False
 
     async def async_setup(self) -> None:
         """Register BLE advertisement callback and battery check timer."""
@@ -91,16 +93,21 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
     @callback
     def _on_state_update(self, state: PressensorState) -> None:
         """Handle state updates from the BLE client (runs in event loop)."""
+        if not self._was_available:
+            _LOGGER.info("Pressensor %s is connected", self._address)
+            self._was_available = True
         self.async_set_updated_data(None)
 
     @callback
     def _on_disconnect(self) -> None:
         """Handle device disconnection (likely going back to sleep)."""
         if not self._expected_disconnect:
-            _LOGGER.debug(
-                "Pressensor %s disconnected, waiting for next advertisement",
-                self._address,
-            )
+            if self._was_available:
+                _LOGGER.info(
+                    "Pressensor %s disconnected, waiting for next advertisement",
+                    self._address,
+                )
+                self._was_available = False
             self.async_set_updated_data(None)
 
     @callback
@@ -151,11 +158,11 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
         self._last_battery_check = utcnow()
 
     async def async_request_connect(self) -> None:
-        """Manually request a connection attempt (e.g. from a button press)."""
+        """Manually request a connection attempt (e.g. from a button press).
+
+        Raises HomeAssistantError if the device cannot be found or connection fails.
+        """
         if self._connecting or (self._client and self._client.connected):
-            _LOGGER.debug(
-                "Pressensor %s already connected or connecting", self._address
-            )
             return
 
         ble_device = bluetooth.async_ble_device_from_address(
@@ -163,14 +170,15 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
         )
 
         if ble_device is None:
-            _LOGGER.debug(
-                "Pressensor %s not found — device may be asleep", self._address
+            raise HomeAssistantError(
+                "Pressensor not found — the device may be asleep or out of range"
             )
-            return
 
         self._connecting = True
         try:
             await self._async_ensure_connected(ble_device)
+        except Exception as err:
+            raise HomeAssistantError("Failed to connect to Pressensor") from err
         finally:
             self._connecting = False
 
