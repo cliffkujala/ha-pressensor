@@ -33,7 +33,7 @@ During setup you will be asked to select your Pressensor from a list of discover
 
 No credentials, API keys, or additional configuration parameters are required.
 
-If your Pressensor is not discovered automatically, try pressing the button on the device to wake it up, then go to **Settings → Devices & Services → Add Integration** and search for "Pressensor".
+If your Pressensor is not discovered automatically, pull a shot of espresso or use the blind filter in order to apply pressure to the sensor, which should wake it up, then go to **Settings → Devices & Services → Add Integration** and search for "Pressensor".
 
 ## Requirements
 
@@ -74,20 +74,28 @@ A 5-minute fallback poll ensures connectivity if an advertisement is missed.
 
 ## Automation Examples
 
-### Alert on high extraction pressure
+### Auto-tare scale and start timer on extraction
+
+Detects a 200 mbar (0.2 bar) pressure rise — indicating the pump has engaged — then tares a Bluetooth scale and starts its timer automatically.
 
 ```yaml
 automation:
-  - alias: "High pressure alert"
+  - alias: "Auto-tare and start timer on extraction"
     trigger:
-      - platform: numeric_state
+      - platform: state
         entity_id: sensor.prs12345_pressure
-        above: 1200
+    condition:
+      - condition: template
+        value_template: >
+          {{ (trigger.to_state.state | float(0))
+             - (trigger.from_state.state | float(0)) >= 200 }}
     action:
-      - service: notify.mobile_app
-        data:
-          title: "Pressensor"
-          message: "Extraction pressure is above 12 bar!"
+      - service: button.press
+        target:
+          entity_id: button.acaia_lunar_tare
+      - service: button.press
+        target:
+          entity_id: button.acaia_lunar_start_stop
 ```
 
 ### Low battery notification
