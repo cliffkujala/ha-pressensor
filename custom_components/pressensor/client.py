@@ -80,11 +80,7 @@ class PressensorClient:
             )
 
             # Read initial battery level
-            battery_data = await self._client.read_gatt_char(
-                BATTERY_CHARACTERISTIC_UUID
-            )
-            if battery_data and len(battery_data) >= 1:
-                self._state.battery_percent = battery_data[0]
+            await self.read_battery()
 
             self._state.connected = True
             self._notify_state()
@@ -117,6 +113,17 @@ class PressensorClient:
                 _LOGGER.debug("Error during disconnect")
         self._state.connected = False
         self._notify_state()
+
+    async def read_battery(self) -> None:
+        """Read the current battery level from the device."""
+        if not self._client or not self._client.is_connected:
+            _LOGGER.warning("Cannot read battery: not connected")
+            return
+
+        battery_data = await self._client.read_gatt_char(BATTERY_CHARACTERISTIC_UUID)
+        if battery_data and len(battery_data) >= 1:
+            self._state.battery_percent = battery_data[0]
+            self._notify_state()
 
     async def zero_pressure(self) -> None:
         """Send a zero/tare command to treat the current pressure as zero."""
