@@ -34,7 +34,7 @@
         "name": "Reconnect"
       },
       "zero_pressure": {
-        "name": "Zero calibration"
+        "name": "Zero Pressure"
       }
     },
     "sensor": {

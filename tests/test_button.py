@@ -22,7 +22,7 @@ async def test_zero_pressure_button(
     mock_client: MagicMock,
 ) -> None:
     """Test zero pressure button calls client method."""
-    entity_id = f"button.{DEVICE_SLUG}_zero_calibration"
+    entity_id = f"button.{DEVICE_SLUG}_zero_pressure"
     state = hass.states.get(entity_id)
     assert state is not None
 

@@ -21,7 +21,7 @@ PARALLEL_UPDATES = 0
 ZERO_PRESSURE_BUTTON = ButtonEntityDescription(
     key="zero_pressure",
     translation_key="zero_pressure",
-    name="Zero calibration",
+    name="Zero Pressure",
     icon="mdi:gauge-empty",
 )
 
