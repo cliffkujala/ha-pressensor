@@ -1,0 +1,21 @@
+{
+  "domain": "pressensor",
+  "name": "Pressensor",
+  "bluetooth": [
+    {
+      "local_name": "PRS*",
+      "connectable": true
+    },
+    {
+      "service_uuid": "873ae82a-4c5a-4342-b539-9d900bf7ebd0",
+      "connectable": true
+    }
+  ],
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
+  "documentation": "https://pressensor.com/pages/prs-protocol",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "version": "1.0.0"
+}
