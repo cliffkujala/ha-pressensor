@@ -154,8 +154,8 @@ class PressensorClient:
         """
         if len(data) >= 2:
             pressure_mbar = float(struct.unpack(">h", data[0:2])[0])
-            # Dead-band filter: ignore changes of ≤1 mbar to suppress sensor noise
-            if abs(pressure_mbar - self._last_reported_pressure) > 1:
+            # Dead-band filter: ignore changes of ≤5 mbar to suppress sensor noise
+            if abs(pressure_mbar - self._last_reported_pressure) > 5:
                 self._state.pressure_mbar = pressure_mbar
                 self._last_reported_pressure = pressure_mbar
 

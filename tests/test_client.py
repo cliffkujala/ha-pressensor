@@ -337,7 +337,7 @@ class TestPressensorClientNotifications:
         self,
         client: PressensorClient,
     ) -> None:
-        """Test that <=1 mbar changes from last reported value are filtered."""
+        """Test that <=5 mbar changes from last reported value are filtered."""
         characteristic = MagicMock(spec=BleakGATTCharacteristic)
 
         # First reading of 1000 mbar exceeds dead-band from initial 0
@@ -345,20 +345,20 @@ class TestPressensorClientNotifications:
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 1000.0
 
-        # Change of 1 mbar — should be filtered
-        data = struct.pack(">h", 1001)
+        # Change of 5 mbar — should be filtered
+        data = struct.pack(">h", 1005)
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 1000.0
 
-        # Change of -1 mbar from last reported — should be filtered
-        data = struct.pack(">h", 999)
+        # Change of -3 mbar from last reported — should be filtered
+        data = struct.pack(">h", 997)
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 1000.0
 
-        # Change of 2 mbar — should pass through
-        data = struct.pack(">h", 1002)
+        # Change of 6 mbar — should pass through
+        data = struct.pack(">h", 1006)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == 1002.0
+        assert client.state.pressure_mbar == 1006.0
 
     def test_deadband_near_zero(
         self,
@@ -368,20 +368,20 @@ class TestPressensorClientNotifications:
         characteristic = MagicMock(spec=BleakGATTCharacteristic)
 
         # Initial state: last_reported_pressure = 0.0
-        # +1 mbar from zero — within dead-band, filtered
-        data = struct.pack(">h", 1)
+        # +5 mbar from zero — within dead-band, filtered
+        data = struct.pack(">h", 5)
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar is None
 
-        # -1 mbar from zero — within dead-band, filtered
-        data = struct.pack(">h", -1)
+        # -5 mbar from zero — within dead-band, filtered
+        data = struct.pack(">h", -5)
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar is None
 
-        # +2 mbar from zero — exceeds dead-band, passes through
-        data = struct.pack(">h", 2)
+        # +6 mbar from zero — exceeds dead-band, passes through
+        data = struct.pack(">h", 6)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == 2.0
+        assert client.state.pressure_mbar == 6.0
 
     def test_short_data_ignored(
         self,
