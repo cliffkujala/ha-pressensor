@@ -110,6 +110,7 @@ Replace `prs12345` with your device's actual entity ID prefix.
 
 ## Known Limitations
 
+- **Exclusive Bluetooth connection** — While this integration is connected to your Pressensor, you won't be able to use the official app, as BLE devices only support one connection at a time. The Pressensor's sleep/wake cycle creates natural windows where the app can connect, but not while HA holds an active connection
 - **Bluetooth range** — The device must be within BLE range of your HA host or an ESPHome Bluetooth Proxy (~10 m line of sight, less through walls)
 - **No data when idle** — The Pressensor sleeps between pressure changes to save battery. Readings stop when the device is idle
 - **Temperature update frequency** — Temperature is only sent every 16th pressure notification, so it updates less frequently than pressure
