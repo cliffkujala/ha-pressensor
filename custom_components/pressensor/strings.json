@@ -23,6 +23,20 @@
       }
     }
   },
+  "exceptions": {
+    "not_connected": {
+      "message": "Pressensor is not connected. Wait for the device to wake up or press Reconnect."
+    },
+    "zero_pressure_failed": {
+      "message": "Failed to send zero pressure command."
+    },
+    "device_not_found": {
+      "message": "Pressensor not found. The device may be asleep or out of range."
+    },
+    "connection_failed": {
+      "message": "Failed to connect to Pressensor."
+    }
+  },
   "entity": {
     "binary_sensor": {
       "connected": {

@@ -1,0 +1,12 @@
+{
+  "entity": {
+    "button": {
+      "zero_pressure": {
+        "default": "mdi:gauge-empty"
+      },
+      "reconnect": {
+        "default": "mdi:bluetooth-connect"
+      }
+    }
+  }
+}

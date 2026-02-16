@@ -70,13 +70,14 @@ async def test_zero_pressure_button_not_connected(
     # Make the client report as disconnected
     mock_client.connected = False
 
-    with pytest.raises(HomeAssistantError, match="not connected"):
+    with pytest.raises(HomeAssistantError) as exc_info:
         await hass.services.async_call(
             BUTTON_DOMAIN,
             SERVICE_PRESS,
             {ATTR_ENTITY_ID: entity_id},
             blocking=True,
         )
+    assert exc_info.value.translation_key == "not_connected"
 
 
 async def test_zero_pressure_button_failure(
@@ -88,13 +89,14 @@ async def test_zero_pressure_button_failure(
 
     mock_client.zero_pressure = AsyncMock(side_effect=Exception("BLE write error"))
 
-    with pytest.raises(HomeAssistantError, match="Failed to send"):
+    with pytest.raises(HomeAssistantError) as exc_info:
         await hass.services.async_call(
             BUTTON_DOMAIN,
             SERVICE_PRESS,
             {ATTR_ENTITY_ID: entity_id},
             blocking=True,
         )
+    assert exc_info.value.translation_key == "zero_pressure_failed"
 
 
 async def test_reconnect_button_device_not_found(

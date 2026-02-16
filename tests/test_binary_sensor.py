@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from homeassistant.const import STATE_ON
+from homeassistant.const import STATE_ON, EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from .conftest import MOCK_NAME
 
@@ -26,3 +27,11 @@ async def test_connected_sensor_always_available(hass: HomeAssistant) -> None:
     assert state is not None
     # The connectivity sensor should always be available
     assert state.attributes.get("available", True) is True
+
+
+async def test_connected_sensor_entity_category(hass: HomeAssistant) -> None:
+    """Test connectivity sensor has diagnostic entity category."""
+    registry = er.async_get(hass)
+    entry = registry.async_get(f"binary_sensor.{DEVICE_SLUG}_connectivity")
+    assert entry is not None
+    assert entry.entity_category is EntityCategory.DIAGNOSTIC

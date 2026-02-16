@@ -10,10 +10,12 @@ from homeassistant.const import (
     ATTR_DEVICE_CLASS,
     ATTR_UNIT_OF_MEASUREMENT,
     PERCENTAGE,
+    EntityCategory,
     UnitOfPressure,
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from custom_components.pressensor.client import PressensorState
 
@@ -86,3 +88,19 @@ async def test_battery_sensor_coordinator_update(
     # Test available with restored data
     entity._restored_data = MagicMock()
     assert entity.available is True
+
+
+async def test_battery_sensor_entity_category(hass: HomeAssistant) -> None:
+    """Test battery sensor has diagnostic entity category."""
+    registry = er.async_get(hass)
+    entry = registry.async_get(f"sensor.{DEVICE_SLUG}_battery")
+    assert entry is not None
+    assert entry.entity_category is EntityCategory.DIAGNOSTIC
+
+
+async def test_pressure_sensor_no_entity_category(hass: HomeAssistant) -> None:
+    """Test pressure sensor has no entity category (primary entity)."""
+    registry = er.async_get(hass)
+    entry = registry.async_get(f"sensor.{DEVICE_SLUG}_pressure")
+    assert entry is not None
+    assert entry.entity_category is None

@@ -15,6 +15,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     PERCENTAGE,
+    EntityCategory,
     UnitOfPressure,
     UnitOfTemperature,
 )
@@ -66,6 +67,7 @@ RESTORE_SENSORS: tuple[PressensorSensorEntityDescription, ...] = (
     PressensorSensorEntityDescription(
         key="battery",
         device_class=SensorDeviceClass.BATTERY,
+        entity_category=EntityCategory.DIAGNOSTIC,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda state: state.battery_percent,

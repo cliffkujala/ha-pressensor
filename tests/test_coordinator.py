@@ -265,14 +265,13 @@ class TestCoordinatorRequestConnect:
         coordinator: PressensorCoordinator,
     ) -> None:
         """Test async_request_connect raises when device not found."""
-        with (
-            patch(
-                "custom_components.pressensor.coordinator.bluetooth.async_ble_device_from_address",
-                return_value=None,
-            ),
-            pytest.raises(HomeAssistantError, match="not found"),
+        with patch(
+            "custom_components.pressensor.coordinator.bluetooth.async_ble_device_from_address",
+            return_value=None,
         ):
-            await coordinator.async_request_connect()
+            with pytest.raises(HomeAssistantError) as exc_info:
+                await coordinator.async_request_connect()
+            assert exc_info.value.translation_key == "device_not_found"
 
     @pytest.mark.asyncio
     async def test_request_connect_already_connected(
@@ -321,11 +320,12 @@ class TestCoordinatorRequestConnect:
             patch(
                 "custom_components.pressensor.coordinator.PressensorClient"
             ) as mock_cls,
-            pytest.raises(HomeAssistantError, match="Failed to connect"),
         ):
             mock_client = mock_cls.return_value
             mock_client.connect = AsyncMock(side_effect=Exception("BLE error"))
-            await coordinator.async_request_connect()
+            with pytest.raises(HomeAssistantError) as exc_info:
+                await coordinator.async_request_connect()
+            assert exc_info.value.translation_key == "connection_failed"
 
         assert coordinator._connecting is False
 

@@ -52,6 +52,95 @@ If your Pressensor is not discovered automatically, try pressing the button on t
 | Zero Pressure | Button | Calibrate the pressure reading to zero |
 | Reconnect | Button | Manually trigger a BLE connection attempt |
 
+## Supported Devices
+
+- [Pressensor PRS Pressure Transducer](https://pressensor.com/products/pressure-sensor-for-coffee-machines-with-e61-group-heads-m6-thread) — M6 thread, designed for E61 group head espresso machines
+- Devices advertising a BLE name starting with `PRS` or the Pressensor service UUID
+
+No other pressure transducers are currently supported.
+
+## Data Updates
+
+The Pressensor sleeps to conserve battery and wakes when it detects a pressure change (threshold ~0.1 bar). The integration uses an **advertisement-driven** connection model:
+
+1. The device wakes and sends a BLE advertisement
+2. Home Assistant detects the advertisement and connects automatically
+3. Pressure data arrives via BLE GATT notifications in real time
+4. Temperature is included with every 16th pressure notification
+5. Battery level is read on each connection and checked daily
+6. When the device goes back to sleep, HA waits for the next advertisement
+
+A 5-minute fallback poll ensures connectivity if an advertisement is missed.
+
+## Automation Examples
+
+### Alert on high extraction pressure
+
+```yaml
+automation:
+  - alias: "High pressure alert"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.prs12345_pressure
+        above: 1200
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Pressensor"
+          message: "Extraction pressure is above 12 bar!"
+```
+
+### Low battery notification
+
+```yaml
+automation:
+  - alias: "Pressensor low battery"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.prs12345_battery
+        below: 15
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Pressensor"
+          message: "Battery is low ({{ states('sensor.prs12345_battery') }}%). Replace the CR2032."
+```
+
+Replace `prs12345` with your device's actual entity ID prefix.
+
+## Known Limitations
+
+- **Bluetooth range** — The device must be within BLE range of your HA host or an ESPHome Bluetooth Proxy (~10 m line of sight, less through walls)
+- **No data when idle** — The Pressensor sleeps between pressure changes to save battery. Readings stop when the device is idle
+- **Temperature update frequency** — Temperature is only sent every 16th pressure notification, so it updates less frequently than pressure
+- **Battery life** — The CR2032 coin cell battery life depends on how often the device wakes. Frequent use reduces battery life
+- **Single device per entry** — Each Pressensor requires its own integration config entry
+
+## Troubleshooting
+
+### Device not discovered
+
+- Ensure the Pressensor has a fresh CR2032 battery installed
+- Confirm your HA host has a working Bluetooth adapter, or that an ESPHome Bluetooth Proxy is within range
+- Bring the device closer to the Bluetooth adapter or proxy
+- Press the button on the Pressensor to wake it up, then check **Settings -> Devices & Services** for a new discovery
+
+### Connection drops frequently
+
+- Place an ESPHome Bluetooth Proxy closer to the Pressensor
+- Reduce interference from other Bluetooth or Wi-Fi devices
+- The device intentionally disconnects when idle to save battery — this is normal behavior
+
+### Readings appear stale or unavailable
+
+- The device may be asleep. Apply pressure to the group head or press the Reconnect button in HA
+- Check the Connected binary sensor — if it shows Off, the device is not currently streaming data
+
+### Battery reads 0% or unavailable
+
+- Replace the CR2032 battery
+- After replacing, wake the device and press the Reconnect button
+
 ## Removal
 
 1. Go to **Settings → Devices & Services**

@@ -22,6 +22,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
 from .client import PressensorClient, PressensorState
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -171,14 +172,18 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
 
         if ble_device is None:
             raise HomeAssistantError(
-                "Pressensor not found — the device may be asleep or out of range"
+                translation_domain=DOMAIN,
+                translation_key="device_not_found",
             )
 
         self._connecting = True
         try:
             await self._async_ensure_connected(ble_device)
         except Exception as err:
-            raise HomeAssistantError("Failed to connect to Pressensor") from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="connection_failed",
+            ) from err
         finally:
             self._connecting = False
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
@@ -13,6 +14,7 @@ except ImportError:
         AddEntitiesCallback as AddConfigEntryEntitiesCallback,
     )
 
+from .const import DOMAIN
 from .coordinator import PressensorConfigEntry, PressensorCoordinator
 from .entity import PressensorEntity
 
@@ -23,14 +25,13 @@ ZERO_PRESSURE_BUTTON = ButtonEntityDescription(
     key="zero_pressure",
     translation_key="zero_pressure",
     name="Zero Pressure",
-    icon="mdi:gauge-empty",
 )
 
 RECONNECT_BUTTON = ButtonEntityDescription(
     key="reconnect",
     translation_key="reconnect",
     name="Reconnect",
-    icon="mdi:bluetooth-connect",
+    entity_category=EntityCategory.DIAGNOSTIC,
 )
 
 
@@ -56,12 +57,16 @@ class PressensorZeroPressureButton(PressensorEntity, ButtonEntity):
         """Handle the button press — send zero pressure command."""
         if not self.coordinator.client or not self.coordinator.client.connected:
             raise HomeAssistantError(
-                "Pressensor is not connected. Wait for the device to wake up or press Reconnect."
+                translation_domain=DOMAIN,
+                translation_key="not_connected",
             )
         try:
             await self.coordinator.client.zero_pressure()
         except Exception as err:
-            raise HomeAssistantError("Failed to send zero pressure command") from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="zero_pressure_failed",
+            ) from err
 
 
 class PressensorReconnectButton(PressensorEntity, ButtonEntity):
