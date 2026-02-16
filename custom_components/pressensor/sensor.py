@@ -42,6 +42,9 @@ class PressensorSensorEntityDescription(SensorEntityDescription):
     value_fn: Callable[[PressensorState], float | int | None]
 
 
+PRESSURE_DEADBAND: float = 5.0
+
+
 SENSORS: tuple[PressensorSensorEntityDescription, ...] = (
     PressensorSensorEntityDescription(
         key="pressure",
@@ -96,11 +99,21 @@ class PressensorSensor(PressensorEntity, SensorEntity):
     """Representation of a Pressensor sensor."""
 
     entity_description: PressensorSensorEntityDescription
+    _last_native_value: float | int | None = None
 
     @property
     def native_value(self) -> float | int | None:
-        """Return the sensor value."""
-        return self.entity_description.value_fn(self.coordinator.state)
+        """Return the sensor value, with dead-band filtering for pressure."""
+        value = self.entity_description.value_fn(self.coordinator.state)
+        if self.entity_description.key != "pressure":
+            self._last_native_value = value
+            return value
+        # Dead-band: suppress changes ≤5 mbar from last reported value
+        if self._last_native_value is not None and value is not None:
+            if abs(value - self._last_native_value) <= PRESSURE_DEADBAND:
+                return self._last_native_value
+        self._last_native_value = value
+        return value
 
 
 class PressensorRestoreSensor(PressensorEntity, RestoreSensor):
