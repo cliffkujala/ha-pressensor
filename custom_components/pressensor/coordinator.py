@@ -6,6 +6,8 @@ import logging
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
+from bleak.backends.device import BLEDevice
+
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import (
     BluetoothCallbackMatcher,
@@ -140,17 +142,20 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
         finally:
             self._connecting = False
 
-    async def _async_ensure_connected(self, ble_device: bluetooth.BLEDevice) -> None:
+    async def _async_ensure_connected(self, ble_device: BLEDevice) -> None:
         """Create or update the client and connect."""
         if self._client is None:
+
+            def _state_cb(state: PressensorState) -> None:
+                self.hass.loop.call_soon_threadsafe(self._on_state_update, state)
+
+            def _disconnect_cb() -> None:
+                self.hass.loop.call_soon_threadsafe(self._on_disconnect)
+
             self._client = PressensorClient(
                 ble_device=ble_device,
-                state_callback=lambda state: self.hass.loop.call_soon_threadsafe(
-                    self._on_state_update, state
-                ),
-                disconnect_callback=lambda: self.hass.loop.call_soon_threadsafe(
-                    self._on_disconnect
-                ),
+                state_callback=_state_cb,
+                disconnect_callback=_disconnect_cb,
             )
         else:
             self._client.set_ble_device(ble_device)

@@ -158,6 +158,8 @@ class TestCoordinatorAdvertisement:
             coordinator._on_bluetooth_advertisement(service_info, change)
 
         mock_task.assert_called_once()
+        # Close the coroutine to avoid "never awaited" warning
+        mock_task.call_args[0][1].close()
 
     def test_on_advertisement_skips_when_connecting(
         self,

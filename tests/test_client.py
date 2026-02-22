@@ -333,11 +333,11 @@ class TestPressensorClientNotifications:
 
         assert client.state.pressure_mbar == -50.0
 
-    def test_deadband_filters_noise(
+    def test_rounding_and_deadband_filters_noise(
         self,
         client: PressensorClient,
     ) -> None:
-        """Test that <=5 mbar changes from last reported value are filtered."""
+        """Test that rounding to 10 mbar + dead-band suppresses noise."""
         characteristic = MagicMock(spec=BleakGATTCharacteristic)
 
         # First reading of 1000 mbar exceeds dead-band from initial 0
@@ -345,43 +345,48 @@ class TestPressensorClientNotifications:
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 1000.0
 
-        # Change of 5 mbar — should be filtered
+        # 1004 rounds to 1000 — same as last, filtered by dead-band
+        data = struct.pack(">h", 1004)
+        client._on_pressure_notification(characteristic, bytearray(data))
+        assert client.state.pressure_mbar == 1000.0
+
+        # 1005 rounds to 1000 (banker's rounding) — still filtered
         data = struct.pack(">h", 1005)
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 1000.0
 
-        # Change of -3 mbar from last reported — should be filtered
-        data = struct.pack(">h", 997)
-        client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == 1000.0
-
-        # Change of 6 mbar — should pass through
+        # 1006 rounds to 1010 — 10 mbar change, passes dead-band
         data = struct.pack(">h", 1006)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == 1006.0
+        assert client.state.pressure_mbar == 1010.0
 
-    def test_deadband_near_zero(
+        # 1015 rounds to 1020 — 10 mbar change from 1010, passes
+        data = struct.pack(">h", 1015)
+        client._on_pressure_notification(characteristic, bytearray(data))
+        assert client.state.pressure_mbar == 1020.0
+
+    def test_rounding_near_zero(
         self,
         client: PressensorClient,
     ) -> None:
-        """Test that noise around zero is suppressed."""
+        """Test that noise around zero is suppressed by rounding."""
         characteristic = MagicMock(spec=BleakGATTCharacteristic)
 
         # Initial state: last_reported_pressure = 0.0
-        # +5 mbar from zero — within dead-band, filtered
-        data = struct.pack(">h", 5)
+        # +4 rounds to 0 — same as last, filtered
+        data = struct.pack(">h", 4)
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 0.0
 
-        # -5 mbar from zero — within dead-band, filtered
-        data = struct.pack(">h", -5)
+        # -6 rounds to -10 — 10 mbar change, passes dead-band
+        data = struct.pack(">h", -6)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == 0.0
+        assert client.state.pressure_mbar == -10.0
 
-        # +6 mbar from zero — exceeds dead-band, passes through
+        # +6 rounds to 10 — 20 mbar change from -10, passes
         data = struct.pack(">h", 6)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == 6.0
+        assert client.state.pressure_mbar == 10.0
 
     def test_short_data_ignored(
         self,

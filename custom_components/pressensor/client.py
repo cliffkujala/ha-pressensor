@@ -155,7 +155,8 @@ class PressensorClient:
         changed = False
 
         if len(data) >= 2:
-            pressure_mbar = float(struct.unpack(">h", data[0:2])[0])
+            # Round to nearest 10 mbar (0.01 bar) — sufficient for espresso use
+            pressure_mbar = float(round(struct.unpack(">h", data[0:2])[0], -1))
             # Dead-band filter: ignore changes of ≤5 mbar to suppress sensor noise
             if abs(pressure_mbar - self._last_reported_pressure) > 5:
                 self._state.pressure_mbar = pressure_mbar
