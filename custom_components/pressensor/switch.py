@@ -28,6 +28,7 @@ PARALLEL_UPDATES = 0
 CONNECTION_SWITCH = SwitchEntityDescription(
     key="connection_enabled",
     translation_key="connection_enabled",
+    name="Connection Enabled",
     entity_category=EntityCategory.CONFIG,
 )
 

@@ -13,7 +13,7 @@ from homeassistant.util.dt import utcnow
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.pressensor.client import PressensorState
-from custom_components.pressensor.const import DOMAIN
+from custom_components.pressensor.const import CONF_CONNECTION_ENABLED, DOMAIN
 from custom_components.pressensor.coordinator import (
     BATTERY_CHECK_INTERVAL,
     PressensorCoordinator,
@@ -545,6 +545,124 @@ class TestCoordinatorShutdown:
         await coordinator.async_shutdown()
 
         assert coordinator._expected_disconnect is True
+
+
+class TestCoordinatorConnectionEnabled:
+    """Test connection enable/disable."""
+
+    def test_connection_enabled_default(
+        self, coordinator: PressensorCoordinator
+    ) -> None:
+        """Test connection_enabled defaults to True."""
+        assert coordinator.connection_enabled is True
+
+    @pytest.mark.asyncio
+    async def test_set_connection_enabled_noop(
+        self, coordinator: PressensorCoordinator
+    ) -> None:
+        """Test setting same value is a no-op."""
+        with patch.object(coordinator, "async_set_updated_data") as mock_update:
+            await coordinator.async_set_connection_enabled(True)
+
+        mock_update.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_disable_connection(
+        self,
+        coordinator: PressensorCoordinator,
+    ) -> None:
+        """Test disabling connection disconnects client and unregisters callback."""
+        cancel_bt = MagicMock()
+        coordinator._cancel_bluetooth_callback = cancel_bt
+        mock_client = MagicMock()
+        mock_client.disconnect = AsyncMock()
+        coordinator._client = mock_client
+
+        with patch.object(coordinator, "async_set_updated_data"):
+            await coordinator.async_set_connection_enabled(False)
+
+        assert coordinator.connection_enabled is False
+        cancel_bt.assert_called_once()
+        assert coordinator._cancel_bluetooth_callback is None
+        mock_client.disconnect.assert_called_once()
+        assert coordinator.config_entry.options[CONF_CONNECTION_ENABLED] is False
+
+    @pytest.mark.asyncio
+    async def test_disable_connection_no_client(
+        self,
+        coordinator: PressensorCoordinator,
+    ) -> None:
+        """Test disabling connection works without active client."""
+        with patch.object(coordinator, "async_set_updated_data"):
+            await coordinator.async_set_connection_enabled(False)
+
+        assert coordinator.connection_enabled is False
+        assert coordinator.config_entry.options[CONF_CONNECTION_ENABLED] is False
+
+    @pytest.mark.asyncio
+    async def test_enable_connection(
+        self,
+        coordinator: PressensorCoordinator,
+    ) -> None:
+        """Test enabling connection re-registers advertisement callback."""
+        coordinator._connection_enabled = False
+
+        with (
+            patch(
+                "custom_components.pressensor.coordinator.bluetooth.async_register_callback",
+                return_value=MagicMock(),
+            ) as mock_register,
+            patch.object(coordinator, "async_set_updated_data"),
+        ):
+            await coordinator.async_set_connection_enabled(True)
+
+        assert coordinator.connection_enabled is True
+        mock_register.assert_called_once()
+        assert coordinator.config_entry.options[CONF_CONNECTION_ENABLED] is True
+
+    def test_advertisement_skips_when_disabled(
+        self, coordinator: PressensorCoordinator
+    ) -> None:
+        """Test advertisement callback is ignored when connection disabled."""
+        coordinator._connection_enabled = False
+        service_info = MagicMock()
+        change = MagicMock()
+
+        with patch.object(
+            coordinator.config_entry, "async_create_background_task"
+        ) as mock_task:
+            coordinator._on_bluetooth_advertisement(service_info, change)
+
+        mock_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_update_data_skips_when_disabled(
+        self, coordinator: PressensorCoordinator
+    ) -> None:
+        """Test fallback poll skips when connection disabled."""
+        coordinator._connection_enabled = False
+
+        with patch(
+            "custom_components.pressensor.coordinator.bluetooth.async_ble_device_from_address",
+        ) as mock_addr:
+            await coordinator._async_update_data()
+
+        mock_addr.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_battery_check_skips_when_disabled(
+        self, coordinator: PressensorCoordinator
+    ) -> None:
+        """Test battery check skips when connection disabled."""
+        coordinator._connection_enabled = False
+        coordinator._last_battery_check = None
+
+        with patch(
+            "custom_components.pressensor.coordinator.bluetooth.async_ble_device_from_address",
+        ) as mock_addr:
+            await coordinator._async_battery_check(utcnow())
+
+        mock_addr.assert_not_called()
 
 
 class TestCoordinatorEnsureConnected:

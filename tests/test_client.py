@@ -355,13 +355,13 @@ class TestPressensorClientNotifications:
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 1000.0
 
-        # 1006 rounds to 1010 — 10 mbar change, passes dead-band
+        # 1006 rounds to 1010 — only 10 mbar change, NOT > 10, still filtered
         data = struct.pack(">h", 1006)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == 1010.0
+        assert client.state.pressure_mbar == 1000.0
 
-        # 1015 rounds to 1020 — 10 mbar change from 1010, passes
-        data = struct.pack(">h", 1015)
+        # 1016 rounds to 1020 — 20 mbar change from 1000, passes dead-band
+        data = struct.pack(">h", 1016)
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 1020.0
 
@@ -378,15 +378,20 @@ class TestPressensorClientNotifications:
         client._on_pressure_notification(characteristic, bytearray(data))
         assert client.state.pressure_mbar == 0.0
 
-        # -6 rounds to -10 — 10 mbar change, passes dead-band
+        # -6 rounds to -10 — only 10 mbar change, NOT > 10, filtered
         data = struct.pack(">h", -6)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == -10.0
+        assert client.state.pressure_mbar == 0.0
 
-        # +6 rounds to 10 — 20 mbar change from -10, passes
-        data = struct.pack(">h", 6)
+        # -16 rounds to -20 — 20 mbar change from 0, passes dead-band
+        data = struct.pack(">h", -16)
         client._on_pressure_notification(characteristic, bytearray(data))
-        assert client.state.pressure_mbar == 10.0
+        assert client.state.pressure_mbar == -20.0
+
+        # +16 rounds to 20 — 40 mbar change from -20, passes
+        data = struct.pack(">h", 16)
+        client._on_pressure_notification(characteristic, bytearray(data))
+        assert client.state.pressure_mbar == 20.0
 
     def test_short_data_ignored(
         self,
