@@ -24,14 +24,14 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
 from .client import PressensorClient, PressensorState
-from .const import DOMAIN
+from .const import CONF_CONNECTION_ENABLED, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-# Fallback poll interval — primary connection trigger is the advertisement callback
+# Fallback poll interval — primary connection trigger is the advertisement callback.
 SCAN_INTERVAL = timedelta(seconds=300)
 
-# How often to proactively check battery level
+# How often to proactively check battery level.
 BATTERY_CHECK_INTERVAL = timedelta(hours=24)
 
 type PressensorConfigEntry = ConfigEntry[PressensorCoordinator]
@@ -56,6 +56,9 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
         self._client: PressensorClient | None = None
         self._expected_disconnect = False
         self._connecting = False
+        self._connection_enabled: bool = entry.options.get(
+            CONF_CONNECTION_ENABLED, True
+        )
         self._cancel_bluetooth_callback: Callable[[], None] | None = None
         self._cancel_battery_check: Callable[[], None] | None = None
         self._last_battery_check: datetime | None = None
@@ -63,12 +66,13 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
 
     async def async_setup(self) -> None:
         """Register BLE advertisement callback and battery check timer."""
-        self._cancel_bluetooth_callback = bluetooth.async_register_callback(
-            self.hass,
-            self._on_bluetooth_advertisement,
-            BluetoothCallbackMatcher(address=self._address, connectable=True),
-            BluetoothScanningMode.ACTIVE,
-        )
+        if self._connection_enabled:
+            self._cancel_bluetooth_callback = bluetooth.async_register_callback(
+                self.hass,
+                self._on_bluetooth_advertisement,
+                BluetoothCallbackMatcher(address=self._address, connectable=True),
+                BluetoothScanningMode.ACTIVE,
+            )
 
         self._cancel_battery_check = async_track_time_interval(
             self.hass,
@@ -92,6 +96,52 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
     def address(self) -> str:
         """Return the BLE address."""
         return self._address
+
+    @property
+    def connection_enabled(self) -> bool:
+        """Return whether the BLE connection is enabled."""
+        return self._connection_enabled
+
+    async def async_set_connection_enabled(self, enabled: bool) -> None:
+        """Enable or disable the BLE connection.
+
+        When disabled, disconnects from the device and stops listening for
+        advertisements, freeing the BLE link for other apps (e.g. the official
+        Pressensor iOS/Android app).
+        """
+        if enabled == self._connection_enabled:
+            return
+
+        self._connection_enabled = enabled
+
+        # Persist to config entry options so the setting survives restarts.
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            options={**self.config_entry.options, CONF_CONNECTION_ENABLED: enabled},
+        )
+
+        if enabled:
+            # Re-register the advertisement listener and attempt connection.
+            self._cancel_bluetooth_callback = bluetooth.async_register_callback(
+                self.hass,
+                self._on_bluetooth_advertisement,
+                BluetoothCallbackMatcher(address=self._address, connectable=True),
+                BluetoothScanningMode.ACTIVE,
+            )
+            _LOGGER.info("Pressensor %s connection enabled", self._address)
+        else:
+            # Stop listening for advertisements and disconnect.
+            if self._cancel_bluetooth_callback:
+                self._cancel_bluetooth_callback()
+                self._cancel_bluetooth_callback = None
+
+            self._expected_disconnect = True
+            if self._client:
+                await self._client.disconnect()
+            self._expected_disconnect = False
+            _LOGGER.info("Pressensor %s connection disabled", self._address)
+
+        self.async_set_updated_data(None)
 
     @callback
     def _on_state_update(self, state: PressensorState) -> None:
@@ -120,6 +170,8 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
         change: BluetoothChange,
     ) -> None:
         """Handle BLE advertisement — device has woken up."""
+        if not self._connection_enabled:
+            return
         if self._connecting or (self._client and self._client.connected):
             return
 
@@ -194,6 +246,8 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
 
     async def _async_update_data(self) -> None:
         """Fallback poll — connect if advertisement callback hasn't already."""
+        if not self._connection_enabled:
+            return
         if self._connecting or (self._client and self._client.connected):
             return
 
@@ -209,14 +263,16 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
 
     async def _async_battery_check(self, _now: datetime) -> None:
         """Periodic battery check — connect briefly to read battery level."""
-        # Skip if we already connected recently (battery was read on connect)
+        if not self._connection_enabled:
+            return
+        # Skip if we already connected recently (battery was read on connect).
         if self._last_battery_check and (
             utcnow() - self._last_battery_check < BATTERY_CHECK_INTERVAL
         ):
             _LOGGER.debug("Skipping battery check, last check was recent")
             return
 
-        # If already connected, just read the battery
+        # If already connected, just read the battery.
         if self._client and self._client.connected:
             try:
                 await self._client.read_battery()
@@ -226,7 +282,7 @@ class PressensorCoordinator(DataUpdateCoordinator[None]):
                 _LOGGER.warning("Failed to read battery while connected")
             return
 
-        # Not connected — try to find and connect briefly
+        # Not connected — try to find and connect briefly.
         ble_device = bluetooth.async_ble_device_from_address(
             self.hass, self._address, connectable=True
         )

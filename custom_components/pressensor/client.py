@@ -74,13 +74,13 @@ class PressensorClient:
                 disconnected_callback=self._on_disconnect,
             )
 
-            # Subscribe to pressure notifications
+            # Subscribe to pressure notifications.
             await self._client.start_notify(
                 PRESSURE_CHARACTERISTIC_UUID,
                 self._on_pressure_notification,
             )
 
-            # Read initial battery level
+            # Read initial battery level.
             await self.read_battery()
 
             self._state.connected = True
@@ -155,10 +155,14 @@ class PressensorClient:
         changed = False
 
         if len(data) >= 2:
-            # Round to nearest 10 mbar (0.01 bar) — sufficient for espresso use
+            # Round to nearest 10 mbar (0.01 bar) — sufficient for espresso use.
+            # This is the primary noise suppression: idle fluctuations of ±6 mbar
+            # stay within a single rounding bucket.
             pressure_mbar = float(round(struct.unpack(">h", data[0:2])[0], -1))
-            # Dead-band filter: ignore changes of ≤5 mbar to suppress sensor noise
-            if abs(pressure_mbar - self._last_reported_pressure) > 5:
+            # Guard against oscillation at rounding boundaries.
+            # Threshold must exceed the rounding step (10 mbar) so that
+            # single-bucket noise (e.g. 0 ↔ 10 mbar) is suppressed.
+            if abs(pressure_mbar - self._last_reported_pressure) > 10:
                 self._state.pressure_mbar = pressure_mbar
                 self._last_reported_pressure = pressure_mbar
                 changed = True

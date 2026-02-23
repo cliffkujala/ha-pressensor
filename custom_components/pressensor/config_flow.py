@@ -47,7 +47,7 @@ class PressensorConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(format_mac(address))
             self._abort_if_unique_id_configured()
 
-            # Verify device is reachable before creating entry
+            # Verify device is reachable before creating entry.
             if (
                 async_ble_device_from_address(self.hass, address, connectable=True)
                 is None
@@ -60,7 +60,7 @@ class PressensorConfigFlow(ConfigFlow, domain=DOMAIN):
                     data={CONF_ADDRESS: address},
                 )
 
-        # Find Pressensor devices via bluetooth
+        # Find Pressensor devices via bluetooth.
         for device in async_discovered_service_info(self.hass):
             if (
                 device.name and device.name.startswith("PRS")

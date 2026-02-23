@@ -4,10 +4,12 @@ from __future__ import annotations
 
 DOMAIN: str = "pressensor"
 
-# BLE Service and Characteristic UUIDs
+# BLE Service and Characteristic UUIDs.
 PRESSURE_SERVICE_UUID: str = "873ae82a-4c5a-4342-b539-9d900bf7ebd0"
 PRESSURE_CHARACTERISTIC_UUID: str = "873ae82b-4c5a-4342-b539-9d900bf7ebd0"
 ZERO_PRESSURE_CHARACTERISTIC_UUID: str = "873ae82c-4c5a-4342-b539-9d900bf7ebd0"
+
+CONF_CONNECTION_ENABLED: str = "connection_enabled"
 
 BATTERY_SERVICE_UUID: str = "0000180f-0000-1000-8000-00805f9b34fb"
 BATTERY_CHARACTERISTIC_UUID: str = "00002a19-0000-1000-8000-00805f9b34fb"

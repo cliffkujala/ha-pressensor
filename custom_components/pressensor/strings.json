@@ -58,6 +58,11 @@
       "temperature": {
         "name": "Temperature"
       }
+    },
+    "switch": {
+      "connection_enabled": {
+        "name": "Connection Enabled"
+      }
     }
   }
 }

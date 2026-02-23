@@ -51,26 +51,31 @@ If your Pressensor is not discovered automatically, pull a shot of espresso or u
 | Connected | Binary Sensor | BLE connection status |
 | Zero Pressure | Button | Calibrate the pressure reading to zero |
 | Reconnect | Button | Manually trigger a BLE connection attempt |
+| Connection Enabled | Switch | Enable/disable the BLE connection (config) |
 
 ## Supported Devices
 
 - [Pressensor PRS Pressure Transducer](https://pressensor.com/products/pressure-sensor-for-coffee-machines-with-e61-group-heads-m6-thread) — M6 thread, designed for E61 group head espresso machines
-- Devices advertising a BLE name starting with `PRS` or the Pressensor service UUID
 
 No other pressure transducers are currently supported.
 
 ## Data Updates
 
-The Pressensor sleeps to conserve battery and wakes when it detects a pressure change (threshold ~0.1 bar). The integration uses an **advertisement-driven** connection model:
+The integration uses an **advertisement-driven** connection model:
 
-1. The device wakes and sends a BLE advertisement
+1. The Pressensor sends a BLE advertisement
 2. Home Assistant detects the advertisement and connects automatically
 3. Pressure data arrives via BLE GATT notifications in real time
 4. Temperature is included with every 16th pressure notification
 5. Battery level is read on each connection and checked daily
-6. When the device goes back to sleep, HA waits for the next advertisement
+
+Once connected, the integration maintains a **persistent BLE connection** — the device stays connected and streams data continuously. The device does not sleep while an active BLE connection is held. In practice this consumes roughly 1% of the CR2032 battery per day, giving an estimated battery life of several months.
 
 A 5-minute fallback poll ensures connectivity if an advertisement is missed.
+
+### Sharing the device with other apps
+
+BLE devices only support one connection at a time. While HA is connected, the official Pressensor iOS/Android app cannot connect. To free the device for use with other apps, turn off the **Connection Enabled** switch in HA. This disconnects HA and stops it from reconnecting automatically. Turn the switch back on when you want HA to resume monitoring.
 
 ## Automation Examples
 
@@ -122,11 +127,10 @@ Replace `prs12345` with your device's actual entity ID prefix.
 
 ## Known Limitations
 
-- **Exclusive Bluetooth connection** — While this integration is connected to your Pressensor, you won't be able to use the official app, as BLE devices only support one connection at a time. The Pressensor's sleep/wake cycle creates natural windows where the app can connect, but not while HA holds an active connection
+- **Exclusive Bluetooth connection** — While this integration is connected to your Pressensor, you won't be able to use the official app, as BLE devices only support one connection at a time. Use the **Connection Enabled** switch to temporarily release the device for other apps
+- **Persistent connection** — The integration maintains a continuous BLE connection. The device does not sleep while connected. Battery consumption is approximately 1% per day (~several months of battery life)
 - **Bluetooth range** — The device must be within BLE range of your HA host or an ESPHome Bluetooth Proxy (~10 m line of sight, less through walls)
-- **No data when idle** — The Pressensor sleeps between pressure changes to save battery. Readings stop when the device is idle
 - **Temperature update frequency** — Temperature is only sent every 16th pressure notification, so it updates less frequently than pressure
-- **Battery life** — The CR2032 coin cell battery life depends on how often the device wakes. Frequent use reduces battery life
 - **Single device per entry** — Each Pressensor requires its own integration config entry
 
 ## Troubleshooting
